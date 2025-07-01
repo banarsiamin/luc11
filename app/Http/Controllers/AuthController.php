@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Route;
 
 class AuthController extends Controller
 {
@@ -59,4 +60,11 @@ class AuthController extends Controller
             ? response()->json(['message' => 'Reset link sent to your email.'])
             : response()->json(['message' => 'Unable to send reset link.'], 400);
     }
+
+    public function showLoginForm()
+    {
+        return view('login');
+    }
 }
+
+Route::get('/login', [AuthController::class, 'showLoginForm']);
