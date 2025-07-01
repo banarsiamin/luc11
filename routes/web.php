@@ -1,31 +1,48 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CompanyController;
+use App\Http\Middleware\CheckCompanyAccess;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/login');
 });
 
-Route::get('/login', function () {
-    return view('login');
+// Guest routes
+Route::middleware(['guest'])->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/register', function () {
+        return view('register');
+    });
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 });
 
-Route::get('/register', function () {
-    return view('register');
+// Dashboard route
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
-Route::get('/company', function () {
-    return view('company');
-});
-
-Route::get('/company/add', function () {
-    return view('company_add');
-});
-
-Route::get('/company/{id}/edit', function ($id) {
-    return view('company_edit', ['id' => $id]);
-});
-
-Route::get('/company/list', function () {
-    return view('company_list');
+// Protected company routes
+Route::middleware(['auth', CheckCompanyAccess::class])->group(function () {
+    Route::get('/company', function () {
+        return view('company');
+    });
+    
+    Route::get('/company/add', function () {
+        return view('company_add');
+    });
+    
+    Route::get('/company/{id}/edit', function ($id) {
+        return view('company_edit', ['id' => $id]);
+    });
+    
+    Route::get('/company/list', function () {
+        return view('company_list');
+    });
+    
+    Route::apiResource('companies', CompanyController::class);
 });

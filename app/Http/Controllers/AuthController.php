@@ -18,14 +18,22 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
+            'role' => 'sometimes|string|in:admin,manager,user',
         ]);
+        
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'role' => $validated['role'] ?? 'user',
         ]);
         $token = $user->createToken('auth_token')->plainTextToken;
-        return response()->json(['user' => $user, 'token' => $token], 201);
+        
+        if ($request->expectsJson()) {
+            return response()->json(['user' => $user, 'token' => $token], 201);
+        }
+        
+        return redirect('/dashboard')->with('success', 'Registration successful!');
     }
 
     public function login(Request $request)
@@ -34,20 +42,42 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
+        
         $user = User::where('email', $request->email)->first();
+        
         if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
-            ]);
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages([
+                    'email' => ['The provided credentials are incorrect.'],
+                ]);
+            }
+            
+            return redirect()->back()->with('error', 'The provided credentials are incorrect.');
         }
+        
         $token = $user->createToken('auth_token')->plainTextToken;
-        return response()->json(['user' => $user, 'token' => $token]);
+        
+        if ($request->expectsJson()) {
+            return response()->json(['user' => $user, 'token' => $token]);
+        }
+        
+        Auth::login($user);
+        return redirect('/dashboard')->with('success', 'Login successful!');
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+        if ($request->user()) {
+            $request->user()->currentAccessToken()->delete();
+        }
+        
+        Auth::logout();
+        
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Logged out successfully']);
+        }
+        
+        return redirect('/login')->with('success', 'Logged out successfully');
     }
 
     public function forgotPassword(Request $request)
@@ -65,6 +95,10 @@ class AuthController extends Controller
     {
         return view('login');
     }
+    
+    public function dashboard()
+    {
+        return view('dashboard');
+    }
 }
 
-Route::get('/login', [AuthController::class, 'showLoginForm']);

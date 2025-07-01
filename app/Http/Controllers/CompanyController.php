@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Company;
+use App\Http\Middleware\CheckCompanyAccess;
 
 class CompanyController extends Controller
 {
