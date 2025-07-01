@@ -36,13 +36,9 @@ Route::middleware(['auth', CheckCompanyAccess::class])->group(function () {
         return view('company_add');
     });
     
-    Route::get('/company/{id}/edit', function ($id) {
-        return view('company_edit', ['id' => $id]);
-    });
+    Route::get('/company/list', [CompanyController::class, 'index']);
     
-    Route::get('/company/list', function () {
-        return view('company_list');
-    });
+    Route::get('/company/{id}/edit', [CompanyController::class, 'show']);
     
     Route::apiResource('companies', CompanyController::class);
 });

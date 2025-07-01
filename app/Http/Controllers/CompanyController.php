@@ -13,7 +13,11 @@ class CompanyController extends Controller
      */
     public function index()
     {
-        return Company::all();
+        if (request()->expectsJson() || request()->header('Accept') === 'application/json') {
+            return Company::all();
+        }
+        
+        return view('company_list');
     }
 
     /**
@@ -28,7 +32,12 @@ class CompanyController extends Controller
             'website' => 'nullable|string',
         ]);
         $company = Company::create($validated);
-        return response()->json($company, 201);
+        
+        if ($request->expectsJson() || $request->header('Accept') === 'application/json') {
+            return response()->json($company, 201);
+        }
+        
+        return redirect('/company/list')->with('success', 'Company created successfully.');
     }
 
     /**
@@ -37,7 +46,12 @@ class CompanyController extends Controller
     public function show($id)
     {
         $company = Company::findOrFail($id);
-        return response()->json($company);
+        
+        if (request()->expectsJson() || request()->header('Accept') === 'application/json') {
+            return response()->json($company);
+        }
+        
+        return view('company_edit', ['id' => $id, 'company' => $company]);
     }
 
     /**
@@ -53,7 +67,12 @@ class CompanyController extends Controller
             'website' => 'nullable|string',
         ]);
         $company->update($validated);
-        return response()->json($company);
+        
+        if ($request->expectsJson() || $request->header('Accept') === 'application/json') {
+            return response()->json($company);
+        }
+        
+        return redirect('/company/list')->with('success', 'Company updated successfully.');
     }
 
     /**
@@ -63,6 +82,11 @@ class CompanyController extends Controller
     {
         $company = Company::findOrFail($id);
         $company->delete();
-        return response()->json(null, 204);
+        
+        if (request()->expectsJson() || request()->header('Accept') === 'application/json') {
+            return response()->json(null, 204);
+        }
+        
+        return redirect('/company/list')->with('success', 'Company deleted successfully.');
     }
 }

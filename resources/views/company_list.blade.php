@@ -16,6 +16,20 @@
     <div class="container">
         <h1 class="mb-4">Company List</h1>
         
+        @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
+        
+        @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
+        
         <div class="mb-3">
             <a href="/company/add" class="btn btn-primary">Add Company</a>
             <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
@@ -54,7 +68,11 @@
         
         // Function to fetch companies from the API
         function fetchCompanies() {
-            fetch('/companies')
+            fetch('/companies', {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -62,9 +80,11 @@
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Companies fetched:', data);
                     displayCompanies(data);
                 })
                 .catch(error => {
+                    console.error('Error fetching companies:', error);
                     document.getElementById('companiesTable').innerHTML = `
                         <tr>
                             <td colspan="6" class="text-center text-danger">
@@ -111,18 +131,36 @@
         // Function to delete a company
         function deleteCompany(id) {
             if (confirm('Are you sure you want to delete this company?')) {
+                // Get the CSRF token
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
                 fetch(`/companies/${id}`, {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                        'Content-Type': 'application/json'
+                        'X-CSRF-TOKEN': token,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     }
                 })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
-                    fetchCompanies(); // Refresh the list
+                    return response.text(); // The response might be empty
+                })
+                .then(() => {
+                    // Refresh the list after successful delete
+                    fetchCompanies();
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show mb-4';
+                    alertDiv.setAttribute('role', 'alert');
+                    alertDiv.innerHTML = `
+                        Company deleted successfully.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    const container = document.querySelector('.container');
+                    container.insertBefore(alertDiv, container.querySelector('.mb-3'));
                 })
                 .catch(error => {
                     alert('Error deleting company: ' + error.message);
